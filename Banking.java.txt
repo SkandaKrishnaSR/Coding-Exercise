@@ -1,0 +1,192 @@
+package skanda;
+import java.util.*;
+
+class Credentials {
+    private int bankId;
+    private String name;
+    private int password;
+    private int balance;
+
+    public Credentials(int bankId, String name, int password, int balance) {
+        this.bankId = bankId;
+        this.name = name;
+        this.password = password;
+        this.balance = balance;
+    }
+
+    public int getBankId() { return bankId; }
+    public String getName() { return name; }
+    public int getPassword() { return password; }
+    public int getBalance() { return balance; }
+    public void setBalance(int balance) { this.balance = balance; }
+}
+
+class Database {
+    private LinkedList<Credentials> accounts = new LinkedList<>();
+
+    public void addAccount(Credentials account) {
+        accounts.add(account);
+    }
+
+    public Credentials login(int bankId, String name, int password) {
+        for (Credentials acc : accounts) {
+            if (acc.getBankId() == bankId &&
+                acc.getName().equalsIgnoreCase(name) &&
+                acc.getPassword() == password) {
+                return acc;
+            }
+        }
+        return null;
+    }
+
+    public Credentials findAccountById(int bankId) {
+        for (Credentials acc : accounts) {
+            if (acc.getBankId() == bankId) {
+                return acc;
+            }
+        }
+        return null;
+    }
+}
+
+public class Banking {
+    private Scanner sc = new Scanner(System.in);
+    private Credentials currentUser;
+    private Database db;
+
+    public Banking(Credentials user, Database db) {
+        this.currentUser = user;
+        this.db = db;
+    }
+
+    public void deposit() {
+        System.out.print("Enter amount to deposit: ");
+        int amount = sc.nextInt();
+        System.out.print("Enter PIN: ");
+        int pin = sc.nextInt();
+
+        if (pin == currentUser.getPassword()) {
+            currentUser.setBalance(currentUser.getBalance() + amount);
+            System.out.println("✅ Amount deposited successfully!");
+        } else {
+            System.out.println("❌ Incorrect PIN!");
+        }
+        showBalance();
+    }
+
+    public void withdraw() {
+        System.out.print("Enter amount to withdraw: ");
+        int amount = sc.nextInt();
+        System.out.print("Enter PIN: ");
+        int pin = sc.nextInt();
+
+        if (pin == currentUser.getPassword()) {
+            if (amount > currentUser.getBalance()) {
+                System.out.println("❌ Insufficient balance!");
+            } else {
+                currentUser.setBalance(currentUser.getBalance() - amount);
+                System.out.println("✅ Amount withdrawn successfully!");
+            }
+        } else {
+            System.out.println("❌ Incorrect PIN!");
+        }
+        showBalance();
+    }
+
+    public void transaction() {
+        System.out.print("Enter receiver Bank ID: ");
+        int receiverId = sc.nextInt();
+        System.out.print("Enter amount to transfer: ");
+        int amount = sc.nextInt();
+        System.out.print("Enter PIN: ");
+        int pin = sc.nextInt();
+
+        if (pin == currentUser.getPassword()) {
+            if (amount > currentUser.getBalance()) {
+                System.out.println("❌ Insufficient balance!");
+            } else {
+                Credentials receiver = db.findAccountById(receiverId);
+                if (receiver == null) {
+                    System.out.println("❌ Receiver account not found!");
+                    return;
+                }
+
+                // OTP is now ALWAYS required
+                int otp = generateOTP();
+                System.out.print("Enter the OTP: ");
+                int userOtp = sc.nextInt();
+                if (userOtp != otp) {
+                    System.out.println("❌ Incorrect OTP!");
+                    return;
+                }
+
+                currentUser.setBalance(currentUser.getBalance() - amount);
+                receiver.setBalance(receiver.getBalance() + amount);
+                System.out.println("✅ ₹" + amount + " transferred to " + receiver.getName());
+            }
+        } else {
+            System.out.println("❌ Incorrect PIN!");
+        }
+        showBalance();
+    }
+
+    private int generateOTP() {
+        int otp = (int) (Math.random() * 900000) + 100000; // 6-digit OTP
+        System.out.println("📱 Your OTP is: " + otp);
+        return otp;
+    }
+
+    public void showBalance() {
+        System.out.println("💰 Current Balance: ₹" + currentUser.getBalance());
+    }
+
+    public static void main(String[] args) {
+        Scanner sc = new Scanner(System.in);
+        Database db = new Database();
+
+        // Adding some demo accounts
+        db.addAccount(new Credentials(1234, "Ramesh", 2456, 10000));
+        db.addAccount(new Credentials(5678, "Suresh", 7890, 15000));
+        db.addAccount(new Credentials(9101, "Mahesh", 4567, 20000));
+
+        while (true) {
+            System.out.println("\n===== BANKING SYSTEM =====");
+            System.out.print("Enter Bank ID: ");
+            int bankId = sc.nextInt();
+            sc.nextLine();
+            System.out.print("Enter Name: ");
+            String name = sc.nextLine();
+            System.out.print("Enter Password: ");
+            int pass = sc.nextInt();
+
+            Credentials user = db.login(bankId, name, pass);
+            if (user != null) {
+                System.out.println("✅ Login Successful! Welcome, " + user.getName());
+                Banking bnk = new Banking(user, db);
+
+                int choice;
+                do {
+                    System.out.println("\n--- BANK MENU ---");
+                    System.out.println("1. Deposit");
+                    System.out.println("2. Withdraw");
+                    System.out.println("3. Transfer");
+                    System.out.println("4. Show Balance");
+                    System.out.println("5. Logout");
+                    System.out.print("Enter choice: ");
+                    choice = sc.nextInt();
+
+                    switch (choice) {
+                        case 1 -> bnk.deposit();
+                        case 2 -> bnk.withdraw();
+                        case 3 -> bnk.transaction();
+                        case 4 -> bnk.showBalance();
+                        case 5 -> System.out.println("🚪 Logging out...");
+                        default -> System.out.println("❌ Invalid choice!");
+                    }
+                } while (choice != 5);
+            } else {
+                System.out.println("❌ Invalid credentials! Try again.");
+            }
+        }
+    }
+}
