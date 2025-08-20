@@ -1,0 +1,139 @@
+package skanda;
+
+import java.util.*;
+
+class Account {
+    String name;
+    String college;
+    String email;
+    String password;
+    String secretQuestion;
+    String secretAnswer;
+
+    Account(String name, String college, String email, String password, String secretQuestion, String secretAnswer) {
+        this.name = name;
+        this.college = college;
+        this.email = email;
+        this.password = password;
+        this.secretQuestion = secretQuestion;
+        this.secretAnswer = secretAnswer;
+    }
+}
+
+public class EmailGenerator {
+    static LinkedList<Account> accounts = new LinkedList<>();
+    static Scanner sc = new Scanner(System.in);
+    static Random random = new Random();
+
+    public static void main(String[] args) {
+        while (true) {
+            System.out.println("\n1. Create New Account");
+            System.out.println("2. Login");
+            System.out.println("3. Exit");
+            System.out.print("Choose option: ");
+            int choice = sc.nextInt();
+            sc.nextLine();
+
+            if (choice == 1) createAccount();
+            else if (choice == 2) login();
+            else if (choice == 3) break;
+            else System.out.println("Invalid choice");
+        }
+    }
+
+    static void createAccount() {
+        System.out.print("Enter your name: ");
+        String name = sc.nextLine().toLowerCase().replace(" ", "");
+        System.out.print("Enter your college name: ");
+        String college = sc.nextLine().toLowerCase().replace(" ", "");
+        String email = name + "@" + college + ".org.in";
+        String password = generatePassword();
+
+        System.out.println("Choose your secret question:");
+        System.out.println("1. Favourite color");
+        System.out.println("2. Pet name");
+        System.out.println("3. Best friend name");
+        System.out.println("4. Favourite subject");
+        int qnChoice = sc.nextInt();
+        sc.nextLine();
+
+        String question = "";
+        if (qnChoice == 1) question = "Favourite color";
+        else if (qnChoice == 2) question = "Pet name";
+        else if (qnChoice == 3) question = "Best friend name";
+        else question = "Favourite subject";
+
+        System.out.print("Enter answer: ");
+        String ans = sc.nextLine();
+
+        accounts.add(new Account(name, college, email, password, question, ans));
+
+        System.out.println("Account created successfully!");
+        System.out.println("Your Email: " + email);
+        System.out.println("Your Password: " + password);
+    }
+
+    static void login() {
+        System.out.print("Enter email: ");
+        String email = sc.nextLine();
+        System.out.print("Enter password: ");
+        String pass = sc.nextLine();
+
+        Account user = findAccount(email);
+
+        if (user != null && user.password.equals(pass)) {
+            System.out.println("Login successful! Welcome " + user.name);
+        } else if (user != null) {
+            System.out.println("Wrong password! Forgot password? (yes/no): ");
+            String choice = sc.nextLine();
+            if (choice.equalsIgnoreCase("yes")) resetPassword(user);
+        } else {
+            System.out.println("Account not found!");
+        }
+    }
+
+    static void resetPassword(Account user) {
+        System.out.println("Answer your secret question: " + user.secretQuestion);
+        while (true) {
+            System.out.print("Your answer (or type 'exit'): ");
+            String ans = sc.nextLine();
+            if (ans.equalsIgnoreCase("exit")) return;
+
+            if (ans.equalsIgnoreCase(user.secretAnswer)) {
+                int otp = 100000 + random.nextInt(900000);
+                System.out.println("OTP sent: " + otp);
+                System.out.print("Enter OTP: ");
+                int enteredOtp = sc.nextInt();
+                sc.nextLine();
+
+                if (enteredOtp == otp) {
+                    System.out.print("Enter new password: ");
+                    user.password = sc.nextLine();
+                    System.out.println("Password changed successfully!");
+                } else {
+                    System.out.println("Invalid OTP!");
+                }
+                break;
+            } else {
+                System.out.println("Wrong answer! Try again or type 'exit'");
+            }
+        }
+    }
+
+    static String generatePassword() {
+        int length = 8;
+        String chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < length; i++) {
+            sb.append(chars.charAt(random.nextInt(chars.length())));
+        }
+        return sb.toString();
+    }
+
+    static Account findAccount(String email) {
+        for (Account acc : accounts) {
+            if (acc.email.equals(email)) return acc;
+        }
+        return null;
+    }
+}
